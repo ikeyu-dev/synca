@@ -1,0 +1,22 @@
+{
+    "manifest_version": 3,
+    "name": "Synca Forms登録",
+    "version": "1.0.1",
+    "description": "Microsoft FormsのリンクをSyncaに登録する拡張機能",
+    "permissions": ["contextMenus", "activeTab", "clipboardRead"],
+    "host_permissions": ["http://localhost:3001/*"],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "action": {
+        "default_title": "Syncaに登録",
+        "default_popup": "popup.html"
+    },
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "js": ["content.js"],
+            "run_at": "document_end"
+        }
+    ]
+}

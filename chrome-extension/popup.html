@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            width: 320px;
+            padding: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            margin: 0;
+        }
+        h1 {
+            font-size: 16px;
+            margin: 0 0 12px 0;
+            color: #333;
+        }
+        .section {
+            margin-bottom: 16px;
+        }
+        .section-title {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #6366f1;
+        }
+        button {
+            width: 100%;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-primary {
+            background-color: #6366f1;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #4f46e5;
+        }
+        .btn-primary:disabled {
+            background-color: #c7c7c7;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background-color: #f3f4f6;
+            color: #333;
+            margin-top: 8px;
+        }
+        .btn-secondary:hover {
+            background-color: #e5e7eb;
+        }
+        .message {
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-top: 12px;
+        }
+        .message.success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .message.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .hint {
+            font-size: 11px;
+            color: #999;
+            margin-top: 8px;
+        }
+        .current-page {
+            font-size: 12px;
+            color: #666;
+            background: #f9fafb;
+            padding: 8px;
+            border-radius: 4px;
+            word-break: break-all;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Synca Forms登録</h1>
+
+    <div class="section">
+        <div class="section-title">現在のページ</div>
+        <div class="current-page" id="currentUrl">読み込み中...</div>
+        <button class="btn-primary" id="registerPage">このページを登録</button>
+    </div>
+
+    <div class="section">
+        <div class="section-title">URLを入力して登録</div>
+        <input type="text" id="urlInput" placeholder="FormsのURLを貼り付け">
+        <button class="btn-secondary" id="registerUrl">URLを登録</button>
+        <div class="hint">TeamsでFormsリンクをコピーして貼り付けてください</div>
+    </div>
+
+    <div id="message"></div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
