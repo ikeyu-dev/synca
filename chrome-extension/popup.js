@@ -38,6 +38,7 @@ function showMessage(text, isSuccess) {
 }
 
 async function registerForm(url, source) {
+    console.log("[Synca] 登録開始:", { url, source, apiUrl: SYNCA_API_URL });
     try {
         const response = await fetch(SYNCA_API_URL, {
             method: "POST",
@@ -48,6 +49,7 @@ async function registerForm(url, source) {
         });
 
         const result = await response.json();
+        console.log("[Synca] レスポンス:", { status: response.status, result });
 
         if (response.ok && result.success) {
             showMessage("登録しました", true);
@@ -57,7 +59,8 @@ async function registerForm(url, source) {
             showMessage(result.error || "登録に失敗しました", false);
         }
     } catch (error) {
-        showMessage("Syncaに接続できません (localhost:3001)", false);
+        console.error("[Synca] エラー:", error);
+        showMessage("Syncaに接続できません", false);
     }
 }
 
