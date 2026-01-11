@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 import { createTask } from "@/features/tasks/api/todoistClient";
+import {
+    readFormsFromGist,
+    writeFormsToGist,
+} from "@/shared/lib/gist/forms-gist-client";
 
 /**
  * 登録されたFormの型定義
@@ -18,13 +22,18 @@ export interface RegisteredForm {
 }
 
 /**
- * データファイルのパス
+ * Vercel環境かどうかを判定
+ */
+const IS_VERCEL = !!process.env.VERCEL;
+
+/**
+ * データファイルのパス（ローカル環境用）
  */
 const DATA_DIR = path.join(process.cwd(), "data");
 const FORMS_FILE = path.join(DATA_DIR, "forms.json");
 
 /**
- * データディレクトリとファイルの初期化
+ * データディレクトリとファイルの初期化（ローカル環境用）
  */
 async function ensureDataFile(): Promise<void> {
     try {
@@ -44,6 +53,14 @@ async function ensureDataFile(): Promise<void> {
  * Formsデータの読み込み
  */
 async function readForms(): Promise<RegisteredForm[]> {
+    if (IS_VERCEL) {
+        const result = await readFormsFromGist();
+        if (result.success && result.data) {
+            return result.data;
+        }
+        throw new Error(result.error || "Gistからの読み込みに失敗");
+    }
+
     await ensureDataFile();
     const data = await fs.readFile(FORMS_FILE, "utf-8");
     return JSON.parse(data);
@@ -53,6 +70,14 @@ async function readForms(): Promise<RegisteredForm[]> {
  * Formsデータの書き込み
  */
 async function writeForms(forms: RegisteredForm[]): Promise<void> {
+    if (IS_VERCEL) {
+        const result = await writeFormsToGist(forms);
+        if (!result.success) {
+            throw new Error(result.error || "Gistへの書き込みに失敗");
+        }
+        return;
+    }
+
     await ensureDataFile();
     await fs.writeFile(FORMS_FILE, JSON.stringify(forms, null, 2));
 }
