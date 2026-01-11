@@ -2,7 +2,16 @@
  * Synca Forms登録 ポップアップスクリプト
  */
 
-const SYNCA_API_URL = "http://localhost:3001/api/forms";
+const DEFAULT_API_URL = "https://synca-inky.vercel.app/api/forms";
+let SYNCA_API_URL = DEFAULT_API_URL;
+
+/**
+ * 保存されたAPI URLを取得
+ */
+async function loadApiUrl() {
+    const result = await chrome.storage.sync.get(["syncaApiUrl"]);
+    SYNCA_API_URL = result.syncaApiUrl || DEFAULT_API_URL;
+}
 
 const FORMS_URL_PATTERNS = [
     // Microsoft Forms
@@ -53,6 +62,9 @@ async function registerForm(url, source) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+    // API URLを読み込み
+    await loadApiUrl();
+
     const currentUrlEl = document.getElementById("currentUrl");
     const registerPageBtn = document.getElementById("registerPage");
     const urlInput = document.getElementById("urlInput");

@@ -46,13 +46,18 @@ sharp -i icons/icon128.svg -o icons/icon128.png resize 128 128
 
 ## 使い方
 
-1. Syncaを `localhost:3001` で起動
-2. Teams等でFormsリンクを見つける
-3. リンクを右クリック → 「Syncaに登録」を選択
-4. 登録が完了すると緑のトースト通知が表示される
-5. SyncaのMicrosoftページで登録したFormsを確認
+1. Teams等でFormsリンクを見つける
+2. リンクを右クリック → 「Syncaに登録」を選択
+3. または拡張機能アイコンをクリックしてURLを入力
+4. 登録が完了すると通知が表示される
+5. SyncaのFormsページで登録したFormsを確認
+
+## 接続先
+
+デフォルトでは `https://synca-inky.vercel.app` に接続します。
+ローカル開発時は `http://localhost:3001` でも動作します。
 
 ## 注意事項
 
-- Syncaが `http://localhost:3001` で起動している必要があります
 - 同じURLのFormsは重複登録されません
+- 登録するとTodoistにタスクが自動作成されます

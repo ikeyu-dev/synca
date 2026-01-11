@@ -1,10 +1,13 @@
 {
     "manifest_version": 3,
     "name": "Synca Forms登録",
-    "version": "1.0.1",
+    "version": "1.1.0",
     "description": "Microsoft FormsのリンクをSyncaに登録する拡張機能",
     "permissions": ["contextMenus", "activeTab", "clipboardRead"],
-    "host_permissions": ["http://localhost:3001/*"],
+    "host_permissions": [
+        "http://localhost:3001/*",
+        "https://synca-inky.vercel.app/*"
+    ],
     "background": {
         "service_worker": "background.js"
     },

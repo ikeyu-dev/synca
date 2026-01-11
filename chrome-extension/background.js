@@ -3,7 +3,15 @@
  * 右クリックメニューからMicrosoft FormsのURLをSyncaに登録する
  */
 
-const SYNCA_API_URL = "http://localhost:3001/api/forms";
+const DEFAULT_API_URL = "https://synca-inky.vercel.app/api/forms";
+
+/**
+ * 保存されたAPI URLを取得
+ */
+async function getApiUrl() {
+    const result = await chrome.storage.sync.get(["syncaApiUrl"]);
+    return result.syncaApiUrl || DEFAULT_API_URL;
+}
 
 /**
  * FormsのURLパターン（部分一致で判定）
@@ -60,7 +68,8 @@ function showNotification(title, message, isError = false) {
  */
 async function registerForm(url, source) {
     try {
-        const response = await fetch(SYNCA_API_URL, {
+        const apiUrl = await getApiUrl();
+        const response = await fetch(apiUrl, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
