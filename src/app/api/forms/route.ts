@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
+import { createTask } from "@/features/tasks/api/todoistClient";
 
 /**
  * 登録されたFormの型定義
@@ -13,6 +14,7 @@ export interface RegisteredForm {
     registeredAt: string;
     completed: boolean;
     completedAt?: string;
+    todoistTaskId?: string;
 }
 
 /**
@@ -60,6 +62,16 @@ async function writeForms(forms: RegisteredForm[]): Promise<void> {
  */
 function generateId(): string {
     return `form_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+}
+
+/**
+ * 翌日9:00のISO日時文字列を生成
+ */
+function getTomorrowNineAM(): string {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(9, 0, 0, 0);
+    return tomorrow.toISOString();
 }
 
 /**
@@ -143,6 +155,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const formName = source || title || "Forms";
         const newForm: RegisteredForm = {
             id: generateId(),
             url,
@@ -151,6 +164,19 @@ export async function POST(request: NextRequest) {
             registeredAt: new Date().toISOString(),
             completed: false,
         };
+
+        // Todoistにタスクを作成
+        const todoistResult = await createTask({
+            content: `[form]${formName} 入力`,
+            priority: 4,
+            dueDatetime: getTomorrowNineAM(),
+        });
+
+        if (todoistResult.success && todoistResult.data) {
+            newForm.todoistTaskId = todoistResult.data.id;
+        } else {
+            console.warn("Todoistタスク作成に失敗:", todoistResult.error);
+        }
 
         forms.push(newForm);
         await writeForms(forms);
