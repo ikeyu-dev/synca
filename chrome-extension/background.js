@@ -94,8 +94,7 @@ async function registerForm(url, source) {
         }
     } catch (error) {
         console.error("[Synca] 登録エラー:", error);
-        const errorMessage =
-            "Syncaに接続できません。localhost:3001で起動していることを確認してください。";
+        const errorMessage = "Syncaに接続できません";
         showNotification("接続エラー", errorMessage, true);
         return { success: false, message: errorMessage };
     }

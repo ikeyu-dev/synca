@@ -8,6 +8,22 @@ import {
 } from "@/shared/lib/gist/forms-gist-client";
 
 /**
+ * CORSヘッダーを追加
+ */
+const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+};
+
+/**
+ * OPTIONS: CORSプリフライトリクエスト対応
+ */
+export async function OPTIONS() {
+    return NextResponse.json({}, { headers: corsHeaders });
+}
+
+/**
  * 登録されたFormの型定義
  */
 export interface RegisteredForm {
@@ -105,10 +121,13 @@ function getTomorrowNineAM(): string {
 export async function GET() {
     try {
         const forms = await readForms();
-        return NextResponse.json({
-            success: true,
-            data: forms,
-        });
+        return NextResponse.json(
+            {
+                success: true,
+                data: forms,
+            },
+            { headers: corsHeaders }
+        );
     } catch (error) {
         console.error("Forms取得エラー:", error);
         return NextResponse.json(
@@ -116,7 +135,7 @@ export async function GET() {
                 success: false,
                 error: "Formsの取得に失敗しました",
             },
-            { status: 500 }
+            { status: 500, headers: corsHeaders }
         );
     }
 }
@@ -135,7 +154,7 @@ export async function POST(request: NextRequest) {
                     success: false,
                     error: "URLは必須です",
                 },
-                { status: 400 }
+                { status: 400, headers: corsHeaders }
             );
         }
 
@@ -161,7 +180,7 @@ export async function POST(request: NextRequest) {
                     success: false,
                     error: "有効なFormsのURLではありません",
                 },
-                { status: 400 }
+                { status: 400, headers: corsHeaders }
             );
         }
 
@@ -176,7 +195,7 @@ export async function POST(request: NextRequest) {
                     error: "このFormsは既に登録されています",
                     data: existingForm,
                 },
-                { status: 409 }
+                { status: 409, headers: corsHeaders }
             );
         }
 
@@ -211,7 +230,7 @@ export async function POST(request: NextRequest) {
                 success: true,
                 data: newForm,
             },
-            { status: 201 }
+            { status: 201, headers: corsHeaders }
         );
     } catch (error) {
         console.error("Forms登録エラー:", error);
@@ -220,7 +239,7 @@ export async function POST(request: NextRequest) {
                 success: false,
                 error: "Formsの登録に失敗しました",
             },
-            { status: 500 }
+            { status: 500, headers: corsHeaders }
         );
     }
 }
@@ -239,7 +258,7 @@ export async function PATCH(request: NextRequest) {
                     success: false,
                     error: "IDは必須です",
                 },
-                { status: 400 }
+                { status: 400, headers: corsHeaders }
             );
         }
 
@@ -252,7 +271,7 @@ export async function PATCH(request: NextRequest) {
                     success: false,
                     error: "指定されたFormsが見つかりません",
                 },
-                { status: 404 }
+                { status: 404, headers: corsHeaders }
             );
         }
 
@@ -269,10 +288,13 @@ export async function PATCH(request: NextRequest) {
 
         await writeForms(forms);
 
-        return NextResponse.json({
-            success: true,
-            data: forms[formIndex],
-        });
+        return NextResponse.json(
+            {
+                success: true,
+                data: forms[formIndex],
+            },
+            { headers: corsHeaders }
+        );
     } catch (error) {
         console.error("Forms更新エラー:", error);
         return NextResponse.json(
@@ -280,7 +302,7 @@ export async function PATCH(request: NextRequest) {
                 success: false,
                 error: "Formsの更新に失敗しました",
             },
-            { status: 500 }
+            { status: 500, headers: corsHeaders }
         );
     }
 }
@@ -299,7 +321,7 @@ export async function DELETE(request: NextRequest) {
                     success: false,
                     error: "IDは必須です",
                 },
-                { status: 400 }
+                { status: 400, headers: corsHeaders }
             );
         }
 
@@ -312,17 +334,20 @@ export async function DELETE(request: NextRequest) {
                     success: false,
                     error: "指定されたFormsが見つかりません",
                 },
-                { status: 404 }
+                { status: 404, headers: corsHeaders }
             );
         }
 
         const deletedForm = forms.splice(formIndex, 1)[0];
         await writeForms(forms);
 
-        return NextResponse.json({
-            success: true,
-            data: deletedForm,
-        });
+        return NextResponse.json(
+            {
+                success: true,
+                data: deletedForm,
+            },
+            { headers: corsHeaders }
+        );
     } catch (error) {
         console.error("Forms削除エラー:", error);
         return NextResponse.json(
@@ -330,7 +355,7 @@ export async function DELETE(request: NextRequest) {
                 success: false,
                 error: "Formsの削除に失敗しました",
             },
-            { status: 500 }
+            { status: 500, headers: corsHeaders }
         );
     }
 }
