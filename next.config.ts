@@ -1,9 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-    allowedDevOrigins: [
-        "indefinitely-manatoid-danny.ngrok-free.dev",
-    ],
+    /* config options here */
 };
 
 export default nextConfig;
