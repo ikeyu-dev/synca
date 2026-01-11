@@ -10,7 +10,7 @@ export default async function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-base-200">
+        <div className="min-h-dvh flex items-center justify-center bg-base-200">
             <div className="card w-full max-w-md bg-base-100 shadow-xl">
                 <div className="card-body items-center text-center">
                     <h1 className="text-3xl font-bold mb-2">Synca</h1>
