@@ -1,12 +1,8 @@
 {
     "crons": [
         {
-            "path": "/api/cron/train-delay",
-            "schedule": "0 7 * * *"
-        },
-        {
             "path": "/api/cron/portal-notices",
-            "schedule": "0 8 * * *"
+            "schedule": "0 23 * * *"
         }
     ]
 }
