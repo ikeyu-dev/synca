@@ -1,10 +1,30 @@
 /**
- * ローカル通知クライアント
+ * 通知クライアント（ローカル通知 + Web Push購読）
  */
 
 import type { NotificationOptions, NotificationPermissionState } from "./types";
 
 let swRegistration: ServiceWorkerRegistration | null = null;
+
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+
+/**
+ * Base64 URL文字列をUint8Arrayに変換
+ */
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding)
+        .replace(/-/g, "+")
+        .replace(/_/g, "/");
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
 
 /**
  * Service Workerを登録
@@ -129,4 +149,140 @@ export async function notifyNewNotices(count: number): Promise<boolean> {
         tag: "synca-notices",
         url: "/notices",
     });
+}
+
+/**
+ * Web Pushの購読状態を取得
+ */
+export async function getPushSubscription(): Promise<PushSubscription | null> {
+    if (!isNotificationSupported()) {
+        return null;
+    }
+
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        return await registration.pushManager.getSubscription();
+    } catch (error) {
+        console.error("[Notification] 購読状態の取得に失敗:", error);
+        return null;
+    }
+}
+
+/**
+ * Web Pushを購読
+ */
+export async function subscribeToPush(): Promise<boolean> {
+    if (!isNotificationSupported()) {
+        console.log("[Notification] Push not supported");
+        return false;
+    }
+
+    if (!VAPID_PUBLIC_KEY) {
+        console.error("[Notification] VAPID公開鍵が設定されていません");
+        return false;
+    }
+
+    try {
+        // 通知許可を確認
+        if (Notification.permission !== "granted") {
+            const permission = await requestNotificationPermission();
+            if (permission !== "granted") {
+                console.log("[Notification] Permission denied");
+                return false;
+            }
+        }
+
+        const registration = await navigator.serviceWorker.ready;
+
+        // 既存の購読があれば解除
+        const existingSubscription =
+            await registration.pushManager.getSubscription();
+        if (existingSubscription) {
+            await existingSubscription.unsubscribe();
+        }
+
+        // 新しい購読を作成
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
+        });
+
+        // サーバーに購読情報を送信
+        const response = await fetch("/api/notifications/subscribe", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                subscription: subscription.toJSON(),
+                userAgent: navigator.userAgent,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error: ${response.status}`);
+        }
+
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.error || "購読の登録に失敗しました");
+        }
+
+        console.log("[Notification] Push subscription registered");
+        return true;
+    } catch (error) {
+        console.error("[Notification] Push subscription failed:", error);
+        return false;
+    }
+}
+
+/**
+ * Web Pushの購読を解除
+ */
+export async function unsubscribeFromPush(): Promise<boolean> {
+    if (!isNotificationSupported()) {
+        return false;
+    }
+
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+
+        if (!subscription) {
+            console.log("[Notification] No subscription to unsubscribe");
+            return true;
+        }
+
+        // サーバーから購読を削除
+        const response = await fetch("/api/notifications/unsubscribe", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                endpoint: subscription.endpoint,
+            }),
+        });
+
+        if (!response.ok) {
+            console.error("[Notification] Server unsubscribe failed");
+        }
+
+        // ブラウザの購読を解除
+        await subscription.unsubscribe();
+
+        console.log("[Notification] Push subscription removed");
+        return true;
+    } catch (error) {
+        console.error("[Notification] Unsubscribe failed:", error);
+        return false;
+    }
+}
+
+/**
+ * Push購読が有効かどうかを確認
+ */
+export async function isPushSubscribed(): Promise<boolean> {
+    const subscription = await getPushSubscription();
+    return subscription !== null;
 }

@@ -1,0 +1,12 @@
+{
+    "crons": [
+        {
+            "path": "/api/cron/train-delay",
+            "schedule": "*/5 6-23 * * *"
+        },
+        {
+            "path": "/api/cron/portal-notices",
+            "schedule": "0 8-22 * * *"
+        }
+    ]
+}
