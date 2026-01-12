@@ -5,6 +5,10 @@ export {
     requestNotificationPermission,
     showNotification,
     notifyNewNotices,
+    getPushSubscription,
+    subscribeToPush,
+    unsubscribeFromPush,
+    isPushSubscribed,
 } from "./client";
 
 export { checkAndNotifyNewNotices } from "./noticeNotifier";
