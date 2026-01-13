@@ -14,6 +14,7 @@ interface TaskCardProps {
             description?: string;
             priority?: TaskPriority;
             dueDate?: string;
+            dueDatetime?: string;
         }
     ) => void;
 }
@@ -123,6 +124,7 @@ export function TaskCard({
         task.priority
     );
     const [editDueDate, setEditDueDate] = useState(task.dueDate || "");
+    const [editDueTime, setEditDueTime] = useState(task.dueTime || "");
 
     const overdue = task.dueDate ? isOverdue(task.dueDate) : false;
 
@@ -131,6 +133,7 @@ export function TaskCard({
         setEditDescription(task.description || "");
         setEditPriority(task.priority);
         setEditDueDate(task.dueDate || "");
+        setEditDueTime(task.dueTime || "");
         setIsEditing(true);
     };
 
@@ -146,6 +149,7 @@ export function TaskCard({
             description?: string;
             priority?: TaskPriority;
             dueDate?: string;
+            dueDatetime?: string;
         } = {};
 
         if (editContent.trim() !== task.content) {
@@ -157,8 +161,17 @@ export function TaskCard({
         if (editPriority !== task.priority) {
             updates.priority = editPriority;
         }
-        if (editDueDate !== (task.dueDate || "")) {
-            updates.dueDate = editDueDate;
+
+        // 時間が変更された場合、または日付が変更された場合
+        const dateChanged = editDueDate !== (task.dueDate || "");
+        const timeChanged = editDueTime !== (task.dueTime || "");
+
+        if (dateChanged || timeChanged) {
+            if (editDueTime) {
+                updates.dueDatetime = `${editDueDate}T${editDueTime}:00`;
+            } else {
+                updates.dueDate = editDueDate;
+            }
         }
 
         if (Object.keys(updates).length > 0) {
@@ -220,6 +233,12 @@ export function TaskCard({
                                 className="input input-bordered input-xs"
                                 value={editDueDate}
                                 onChange={(e) => setEditDueDate(e.target.value)}
+                            />
+                            <input
+                                type="time"
+                                className="input input-bordered input-xs w-20"
+                                value={editDueTime}
+                                onChange={(e) => setEditDueTime(e.target.value)}
                             />
                         </div>
                     </div>
