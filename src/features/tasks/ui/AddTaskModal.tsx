@@ -31,6 +31,7 @@ export function AddTaskModal({
     const [description, setDescription] = useState("");
     const [priority, setPriority] = useState<TaskPriority>(1);
     const [dueDate, setDueDate] = useState(getTodayString());
+    const [dueTime, setDueTime] = useState("");
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -39,8 +40,14 @@ export function AddTaskModal({
 
         const params: CreateTaskParams = {
             content: content.trim(),
-            dueDate: dueDate || getTodayString(),
         };
+
+        // 時間が指定されている場合はdueDatetime、そうでなければdueDateを使用
+        if (dueTime) {
+            params.dueDatetime = `${dueDate || getTodayString()}T${dueTime}:00`;
+        } else {
+            params.dueDate = dueDate || getTodayString();
+        }
 
         if (description.trim()) params.description = description.trim();
         if (priority > 1) params.priority = priority;
@@ -51,6 +58,7 @@ export function AddTaskModal({
         setDescription("");
         setPriority(1);
         setDueDate(getTodayString());
+        setDueTime("");
     };
 
     const handleClose = () => {
@@ -58,6 +66,7 @@ export function AddTaskModal({
         setDescription("");
         setPriority(1);
         setDueDate(getTodayString());
+        setDueTime("");
         onClose();
     };
 
@@ -109,13 +118,23 @@ export function AddTaskModal({
                         <label className="label">
                             <span className="label-text">期限</span>
                         </label>
-                        <input
-                            type="date"
-                            className="input input-bordered"
-                            value={dueDate}
-                            onChange={(e) => setDueDate(e.target.value)}
-                            disabled={isLoading}
-                        />
+                        <div className="flex gap-2">
+                            <input
+                                type="date"
+                                className="input input-bordered flex-1"
+                                value={dueDate}
+                                onChange={(e) => setDueDate(e.target.value)}
+                                disabled={isLoading}
+                            />
+                            <input
+                                type="time"
+                                className="input input-bordered w-28"
+                                value={dueTime}
+                                onChange={(e) => setDueTime(e.target.value)}
+                                disabled={isLoading}
+                                placeholder="時間"
+                            />
+                        </div>
                     </div>
 
                     <div className="form-control">
