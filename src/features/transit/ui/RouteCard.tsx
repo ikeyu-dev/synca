@@ -26,7 +26,7 @@ function formatDuration(minutes: number): string {
 }
 
 /**
- * 乗り換えルートカード
+ * 乗り換えルートカード（コンパクト版）
  */
 export function RouteCard({
     fromStation,
@@ -40,14 +40,6 @@ export function RouteCard({
     const [error, setError] = useState<string | null>(null);
 
     const yahooUrl = buildYahooTransitUrl(fromStation, toStation);
-
-    const operatorColor = {
-        JR: "bg-green-500",
-        Tobu: "bg-orange-500",
-        Seibu: "bg-yellow-500",
-        Metro: "bg-blue-500",
-        Other: "bg-gray-500",
-    };
 
     useEffect(() => {
         async function loadRoutes() {
@@ -75,53 +67,47 @@ export function RouteCard({
 
     return (
         <div className="card bg-base-100 shadow-sm">
-            <div className="card-body p-4">
-                <div className="flex items-start justify-between">
-                    <div className="flex-1">
+            <div className="card-body p-3">
+                {/* ヘッダー: 出発駅 → 到着駅 */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 min-w-0">
                         {label && (
-                            <span className="text-xs text-base-content/60 mb-1 block">
+                            <span className="badge badge-sm badge-ghost shrink-0">
                                 {label}
                             </span>
                         )}
-                        <div className="flex items-center gap-3">
-                            <div className="flex flex-col items-center">
-                                <span
-                                    className={`w-3 h-3 rounded-full ${operatorColor[fromStation.operator]}`}
-                                />
-                                <span className="w-0.5 h-6 bg-base-300" />
-                                <span
-                                    className={`w-3 h-3 rounded-full ${operatorColor[toStation.operator]}`}
-                                />
-                            </div>
-                            <div className="flex flex-col gap-2">
-                                <div>
-                                    <span className="font-bold">
-                                        {fromStation.name}
-                                    </span>
-                                    <span className="text-xs text-base-content/60 ml-2">
-                                        {fromStation.line}
-                                    </span>
-                                </div>
-                                <div>
-                                    <span className="font-bold">
-                                        {toStation.name}
-                                    </span>
-                                    <span className="text-xs text-base-content/60 ml-2">
-                                        {toStation.line}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+                        <span className="font-medium text-sm truncate">
+                            {fromStation.name}
+                        </span>
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-3 w-3 text-base-content/40 shrink-0"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M14 5l7 7m0 0l-7 7m7-7H3"
+                            />
+                        </svg>
+                        <span className="font-medium text-sm truncate">
+                            {toStation.name}
+                        </span>
                     </div>
-                    {onRemove && (
-                        <button
-                            className="btn btn-ghost btn-sm btn-circle"
-                            onClick={onRemove}
-                            aria-label="削除"
+                    <div className="flex items-center gap-1 shrink-0">
+                        <a
+                            href={yahooUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-ghost btn-xs btn-square"
+                            aria-label="Yahoo!で開く"
                         >
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
-                                className="h-4 w-4"
+                                className="h-3.5 w-3.5"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
@@ -130,164 +116,144 @@ export function RouteCard({
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
                                     strokeWidth={2}
-                                    d="M6 18L18 6M6 6l12 12"
+                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
                                 />
                             </svg>
-                        </button>
-                    )}
+                        </a>
+                        {onRemove && (
+                            <button
+                                className="btn btn-ghost btn-xs btn-square"
+                                onClick={onRemove}
+                                aria-label="削除"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-3.5 w-3.5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M6 18L18 6M6 6l12 12"
+                                    />
+                                </svg>
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {/* 次の電車情報 */}
-                <div className="mt-3 p-3 bg-base-200 rounded-lg">
+                <div
+                    className="mt-2 p-2 bg-base-200 rounded-lg cursor-pointer"
+                    onClick={() => routes.length > 0 && setIsExpanded(!isExpanded)}
+                >
                     {isLoading ? (
                         <div className="flex items-center gap-2">
                             <span className="loading loading-spinner loading-xs" />
-                            <span className="text-sm text-base-content/60">
+                            <span className="text-xs text-base-content/60">
                                 経路を検索中...
                             </span>
                         </div>
                     ) : error ? (
-                        <p className="text-sm text-error">{error}</p>
+                        <p className="text-xs text-error">{error}</p>
                     ) : nextRoute ? (
-                        <div>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-lg font-bold">
-                                        {nextRoute.segments[0]?.departureTime}発
-                                    </span>
-                                    <span className="text-base-content/60">
-                                        →
-                                    </span>
-                                    <span className="text-lg font-bold">
-                                        {nextRoute.segments[
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <span className="font-bold text-primary">
+                                    {nextRoute.segments[0]?.departureTime}
+                                </span>
+                                <span className="text-base-content/40">-</span>
+                                <span className="font-bold">
+                                    {
+                                        nextRoute.segments[
                                             nextRoute.segments.length - 1
-                                        ]?.arrivalTime}
-                                        着
+                                        ]?.arrivalTime
+                                    }
+                                </span>
+                                {nextRoute.transferCount > 0 ? (
+                                    <span className="badge badge-xs">
+                                        乗換{nextRoute.transferCount}
                                     </span>
-                                </div>
-                                <div className="flex items-center gap-2 text-sm">
-                                    <span className="font-bold text-primary">
-                                        {formatDuration(nextRoute.totalDuration)}
+                                ) : (
+                                    <span className="badge badge-xs badge-success">
+                                        直通
                                     </span>
-                                    <span className="text-base-content/60">
-                                        |
-                                    </span>
-                                    <span>
-                                        {nextRoute.totalFare.toLocaleString()}円
-                                    </span>
-                                </div>
+                                )}
                             </div>
-                            <div className="mt-2 flex flex-wrap gap-1">
-                                {nextRoute.segments.map((segment, idx) => (
-                                    <span
-                                        key={idx}
-                                        className="badge badge-outline badge-sm"
+                            <div className="flex items-center gap-2 text-xs">
+                                <span className="font-medium text-primary">
+                                    {formatDuration(nextRoute.totalDuration)}
+                                </span>
+                                <span className="text-base-content/60">
+                                    ¥{nextRoute.totalFare.toLocaleString()}
+                                </span>
+                                {routes.length > 1 && (
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className={`h-3 w-3 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
                                     >
-                                        {segment.lineName.length > 15
-                                            ? segment.lineName.substring(0, 15) + "..."
-                                            : segment.lineName}
-                                    </span>
-                                ))}
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M19 9l-7 7-7-7"
+                                        />
+                                    </svg>
+                                )}
                             </div>
-                            {nextRoute.transferCount > 0 && (
-                                <p className="text-xs text-base-content/60 mt-1">
-                                    乗換 {nextRoute.transferCount}回
-                                </p>
-                            )}
                         </div>
                     ) : (
-                        <p className="text-sm text-base-content/60">
+                        <p className="text-xs text-base-content/60">
                             経路が見つかりませんでした
                         </p>
                     )}
                 </div>
 
                 {/* 詳細経路（展開時） */}
-                {isExpanded && routes.length > 0 && (
-                    <div className="mt-3 space-y-3">
-                        {routes.map((route, routeIdx) => (
+                {isExpanded && routes.length > 1 && (
+                    <div className="mt-2 space-y-1.5">
+                        {routes.slice(1).map((route, routeIdx) => (
                             <div
                                 key={routeIdx}
-                                className="p-3 border border-base-300 rounded-lg"
+                                className="flex items-center justify-between p-2 bg-base-200/50 rounded text-sm"
                             >
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="badge badge-primary badge-sm">
-                                        経路{routeIdx + 1}
+                                <div className="flex items-center gap-2">
+                                    <span className="font-medium text-primary">
+                                        {route.segments[0]?.departureTime}
                                     </span>
-                                    <div className="text-xs text-base-content/60">
-                                        {formatDuration(route.totalDuration)} |{" "}
-                                        {route.totalFare.toLocaleString()}円 | 乗換{" "}
-                                        {route.transferCount}回
-                                    </div>
+                                    <span className="text-base-content/40">
+                                        -
+                                    </span>
+                                    <span className="font-medium">
+                                        {
+                                            route.segments[
+                                                route.segments.length - 1
+                                            ]?.arrivalTime
+                                        }
+                                    </span>
+                                    {route.transferCount > 0 ? (
+                                        <span className="badge badge-xs">
+                                            乗換{route.transferCount}
+                                        </span>
+                                    ) : (
+                                        <span className="badge badge-xs badge-success">
+                                            直通
+                                        </span>
+                                    )}
                                 </div>
-                                <div className="space-y-1">
-                                    {route.segments.map((segment, segIdx) => (
-                                        <div
-                                            key={segIdx}
-                                            className="flex items-center gap-2 text-sm"
-                                        >
-                                            <span className="font-medium">
-                                                {segment.departureTime}
-                                            </span>
-                                            <span className="text-base-content/60">
-                                                {segment.departureStation}
-                                            </span>
-                                            <span className="badge badge-outline badge-xs">
-                                                {segment.lineName.length > 20
-                                                    ? segment.lineName.substring(0, 20) + "..."
-                                                    : segment.lineName}
-                                            </span>
-                                            <span className="text-base-content/60">
-                                                →
-                                            </span>
-                                            <span className="font-medium">
-                                                {segment.arrivalTime}
-                                            </span>
-                                            <span className="text-base-content/60">
-                                                {segment.arrivalStation}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
+                                <span className="text-xs text-base-content/60">
+                                    {formatDuration(route.totalDuration)}
+                                </span>
                             </div>
                         ))}
                     </div>
                 )}
-
-                {/* アクションボタン */}
-                <div className="flex gap-2 mt-4">
-                    {routes.length > 0 && (
-                        <button
-                            className="btn btn-ghost btn-sm"
-                            onClick={() => setIsExpanded(!isExpanded)}
-                        >
-                            {isExpanded ? "閉じる" : "詳細を見る"}
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M19 9l-7 7-7-7"
-                                />
-                            </svg>
-                        </button>
-                    )}
-                    <div className="flex-1" />
-                    <a
-                        href={yahooUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-outline btn-sm"
-                    >
-                        Yahoo!で見る
-                    </a>
-                </div>
             </div>
         </div>
     );

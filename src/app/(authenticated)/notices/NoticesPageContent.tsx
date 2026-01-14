@@ -4,6 +4,78 @@ import { useState, useEffect } from "react";
 import { fetchPortalNotices, type PortalNotice } from "@/features/portal";
 
 /**
+ * お知らせアイテムコンポーネント
+ */
+function NoticeItem({
+    notice,
+    isLast,
+}: {
+    notice: PortalNotice;
+    isLast: boolean;
+}) {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const hasContent = notice.content && notice.content.length > 0;
+
+    return (
+        <div
+            className={`${!isLast ? "border-b border-base-200" : ""}`}
+        >
+            <div
+                className={`p-3 ${hasContent ? "cursor-pointer hover:bg-base-50" : ""}`}
+                onClick={() => hasContent && setIsExpanded(!isExpanded)}
+            >
+                <div className="flex items-start gap-2">
+                    {notice.isImportant && (
+                        <span className="badge badge-error badge-xs mt-1 shrink-0">
+                            重要
+                        </span>
+                    )}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                            <p className="font-medium text-sm">{notice.title}</p>
+                            {hasContent && (
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className={`h-4 w-4 shrink-0 text-base-content/40 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M19 9l-7 7-7-7"
+                                    />
+                                </svg>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-base-content/60">
+                            <span>{notice.date}</span>
+                            {notice.sender && (
+                                <>
+                                    <span>|</span>
+                                    <span>{notice.sender}</span>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 詳細内容（展開時） */}
+            {isExpanded && hasContent && (
+                <div className="px-3 pb-3">
+                    <div className="p-3 bg-base-200 rounded-lg text-sm text-base-content/80 whitespace-pre-wrap max-h-64 overflow-y-auto">
+                        {notice.content}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+/**
  * お知らせ一覧ページコンテンツ
  */
 export function NoticesPageContent() {
@@ -12,7 +84,6 @@ export function NoticesPageContent() {
     const [error, setError] = useState<string | null>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    // お知らせを取得
     const loadNotices = async (forceRefresh = false) => {
         if (forceRefresh) {
             setIsRefreshing(true);
@@ -28,7 +99,7 @@ export function NoticesPageContent() {
             } else {
                 setError(result.error || "お知らせの取得に失敗しました");
             }
-        } catch (err) {
+        } catch {
             setError("お知らせの取得に失敗しました");
         } finally {
             setIsLoading(false);
@@ -53,19 +124,28 @@ export function NoticesPageContent() {
         {} as Record<string, PortalNotice[]>
     );
 
+    // 詳細がある件数
+    const noticesWithContent = notices.filter((n) => n.content).length;
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             {/* ヘッダー */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold">ポータルお知らせ</h1>
-                    <p className="text-sm text-base-content/60 mt-1">
-                        大学ポータルサイトからのお知らせ
+                    <h1 className="text-xl font-bold">ポータルお知らせ</h1>
+                    <p className="text-xs text-base-content/60 mt-0.5">
+                        {notices.length > 0 && (
+                            <>
+                                {notices.length}件
+                                {noticesWithContent > 0 &&
+                                    `（詳細: ${noticesWithContent}件）`}
+                            </>
+                        )}
                     </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1">
                     <button
-                        className="btn btn-primary btn-sm"
+                        className="btn btn-ghost btn-sm"
                         onClick={() => loadNotices(true)}
                         disabled={isRefreshing}
                     >
@@ -87,15 +167,13 @@ export function NoticesPageContent() {
                                 />
                             </svg>
                         )}
-                        更新
                     </button>
                     <a
                         href="https://portal.nit.ac.jp/uprx/up/bs/bsc005/Bsc00501.xhtml"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn btn-outline btn-sm"
+                        className="btn btn-ghost btn-sm"
                     >
-                        ポータルを開く
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             className="h-4 w-4"
@@ -116,17 +194,17 @@ export function NoticesPageContent() {
 
             {/* ローディング */}
             {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                    <span className="loading loading-spinner loading-lg text-primary" />
-                    <p className="mt-4 text-base-content/60">
+                <div className="flex flex-col items-center justify-center py-8">
+                    <span className="loading loading-spinner loading-md text-primary" />
+                    <p className="mt-2 text-sm text-base-content/60">
                         お知らせを取得中...
                     </p>
                 </div>
             ) : error ? (
-                <div className="alert alert-error">
+                <div className="alert alert-error py-2">
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="stroke-current shrink-0 h-6 w-6"
+                        className="stroke-current shrink-0 h-5 w-5"
                         fill="none"
                         viewBox="0 0 24 24"
                     >
@@ -137,54 +215,38 @@ export function NoticesPageContent() {
                             d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
                         />
                     </svg>
-                    <span>{error}</span>
+                    <span className="text-sm">{error}</span>
                 </div>
             ) : notices.length === 0 ? (
                 <div className="card bg-base-100 shadow-sm">
-                    <div className="card-body text-center text-base-content/60">
-                        <p>お知らせはありません</p>
+                    <div className="card-body p-4 text-center text-base-content/60">
+                        <p className="text-sm">お知らせはありません</p>
                     </div>
                 </div>
             ) : (
-                <div className="space-y-6">
+                <div className="space-y-4">
                     {Object.entries(groupedNotices).map(
                         ([category, categoryNotices]) => (
-                            <div key={category} className="space-y-3">
-                                <h2 className="text-lg font-bold flex items-center gap-2">
-                                    <span className="badge badge-primary">
+                            <div key={category} className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="badge badge-primary badge-sm">
                                         {category}
                                     </span>
-                                    <span className="text-sm text-base-content/60">
+                                    <span className="text-xs text-base-content/60">
                                         {categoryNotices.length}件
                                     </span>
-                                </h2>
+                                </div>
                                 <div className="card bg-base-100 shadow-sm">
                                     <div className="card-body p-0">
                                         {categoryNotices.map((notice, index) => (
-                                            <div
+                                            <NoticeItem
                                                 key={notice.id}
-                                                className={`p-4 ${
-                                                    index !== categoryNotices.length - 1
-                                                        ? "border-b border-base-200"
-                                                        : ""
-                                                }`}
-                                            >
-                                                <div className="flex items-start gap-3">
-                                                    {notice.isImportant && (
-                                                        <span className="badge badge-error badge-sm mt-0.5">
-                                                            重要
-                                                        </span>
-                                                    )}
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-medium">
-                                                            {notice.title}
-                                                        </p>
-                                                        <p className="text-sm text-base-content/60 mt-1">
-                                                            {notice.date}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                                notice={notice}
+                                                isLast={
+                                                    index ===
+                                                    categoryNotices.length - 1
+                                                }
+                                            />
                                         ))}
                                     </div>
                                 </div>
@@ -196,8 +258,8 @@ export function NoticesPageContent() {
 
             {/* 注意書き */}
             <div className="text-xs text-base-content/50 text-center">
+                <p>タップで詳細を表示（詳細がある場合）</p>
                 <p>データはキャッシュされます（30分間有効）</p>
-                <p>最新の情報はポータルサイトで確認してください</p>
             </div>
         </div>
     );
