@@ -73,6 +73,270 @@ async function navigateToNoticesPage(page) {
 }
 
 /**
+ * モーダルから本文を抽出
+ */
+async function extractContentFromModal(page) {
+    try {
+        const content = await page.evaluate(() => {
+            // 要素からテキストを抽出（改行を保持）
+            function getTextWithBreaks(el) {
+                if (el instanceof HTMLElement) {
+                    return el.innerText.trim();
+                }
+                const html = el.innerHTML;
+                return html
+                    .replace(/<br\s*\/?>/gi, "\n")
+                    .replace(/<\/p>/gi, "\n")
+                    .replace(/<\/div>/gi, "\n")
+                    .replace(/<\/li>/gi, "\n")
+                    .replace(/<[^>]+>/g, "")
+                    .replace(/&nbsp;/g, " ")
+                    .replace(/&lt;/g, "<")
+                    .replace(/&gt;/g, ">")
+                    .replace(/&amp;/g, "&")
+                    .replace(/\n{3,}/g, "\n\n")
+                    .trim();
+            }
+
+            // モーダル/ダイアログを探す
+            const modalSelectors = [
+                ".ui-dialog",
+                ".ui-dialog-content",
+                "[role='dialog']",
+                ".modal",
+                ".modal-content",
+                ".dialog",
+                ".dialog-content",
+                ".popup",
+                ".overlay",
+                "[class*='dialog']",
+                "[class*='modal']",
+                "[class*='popup']",
+            ];
+
+            let modalElement = null;
+            for (const selector of modalSelectors) {
+                const elements = document.querySelectorAll(selector);
+                for (const el of elements) {
+                    const style = window.getComputedStyle(el);
+                    if (
+                        style.display !== "none" &&
+                        style.visibility !== "hidden" &&
+                        el.textContent &&
+                        el.textContent.length > 50
+                    ) {
+                        modalElement = el;
+                        break;
+                    }
+                }
+                if (modalElement) break;
+            }
+
+            if (!modalElement) {
+                return null;
+            }
+
+            // モーダル内から本文を探す
+            const contentSelectors = [
+                "textarea",
+                ".ui-outputtext",
+                "[id*='honbun']",
+                "[id*='naiyou']",
+                "[id*='content']",
+                "[class*='honbun']",
+                "[class*='body']",
+                "pre",
+                ".message",
+            ];
+
+            for (const selector of contentSelectors) {
+                const element = modalElement.querySelector(selector);
+                if (element) {
+                    const text = getTextWithBreaks(element);
+                    if (text.length > 10) {
+                        return text;
+                    }
+                }
+            }
+
+            // テーブル行から本文を探す
+            const rows = modalElement.querySelectorAll("tr");
+            for (const row of rows) {
+                const cells = row.querySelectorAll("td, th");
+                for (let i = 0; i < cells.length - 1; i++) {
+                    const label = cells[i]?.textContent?.trim() || "";
+                    const valueCell = cells[i + 1];
+                    if (
+                        valueCell &&
+                        (label === "本文" ||
+                            label === "内容" ||
+                            label === "メッセージ" ||
+                            label.includes("本文"))
+                    ) {
+                        const value = getTextWithBreaks(valueCell);
+                        if (value.length > 5) {
+                            return value;
+                        }
+                    }
+                }
+            }
+
+            // モーダル全体のテキストから本文部分を抽出
+            const modalText = modalElement instanceof HTMLElement
+                ? modalElement.innerText
+                : modalElement.textContent || "";
+            const lines = modalText.split("\n");
+            const contentLines = [];
+            let inContent = false;
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (trimmed === "本文" || trimmed === "内容") {
+                    inContent = true;
+                    continue;
+                }
+                if (
+                    inContent &&
+                    (trimmed === "添付ファイル" ||
+                        trimmed === "閉じる" ||
+                        trimmed === "戻る" ||
+                        trimmed === "OK")
+                ) {
+                    break;
+                }
+                if (inContent) {
+                    contentLines.push(trimmed);
+                }
+            }
+
+            if (contentLines.length > 0) {
+                const result = contentLines.join("\n").trim();
+                if (result.length > 0) {
+                    return result;
+                }
+            }
+
+            // 最終手段: モーダル内の長いテキストを返す
+            const allText = modalElement instanceof HTMLElement
+                ? modalElement.innerText.trim()
+                : modalElement.textContent?.trim() || "";
+            if (allText.length > 100) {
+                const textLines = allText.split("\n");
+                if (textLines.length > 4) {
+                    return textLines.slice(2, -2).join("\n").trim();
+                }
+            }
+
+            return null;
+        });
+
+        return content;
+    } catch (error) {
+        console.error("[Portal] モーダル本文抽出エラー:", error);
+        return null;
+    }
+}
+
+/**
+ * モーダルを閉じる
+ */
+async function closeModal(page) {
+    try {
+        await page.evaluate(() => {
+            const closeSelectors = [
+                ".ui-dialog-titlebar-close",
+                "[aria-label='Close']",
+                ".close",
+                ".modal-close",
+                ".dialog-close",
+                "button[class*='close']",
+                ".ui-icon-closethick",
+            ];
+
+            for (const selector of closeSelectors) {
+                const closeBtn = document.querySelector(selector);
+                if (closeBtn) {
+                    closeBtn.click();
+                    return;
+                }
+            }
+
+            const buttons = document.querySelectorAll("button, a, span");
+            for (const btn of buttons) {
+                const text = btn.textContent?.trim() || "";
+                if (text === "閉じる" || text === "OK" || text === "Close") {
+                    btn.click();
+                    return;
+                }
+            }
+
+            document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+        });
+
+        await new Promise((resolve) => setTimeout(resolve, 500));
+    } catch (error) {
+        console.error("[Portal] モーダルを閉じるエラー:", error);
+    }
+}
+
+/**
+ * お知らせの詳細を取得
+ */
+async function fetchNoticeDetail(page, noticeTitle) {
+    try {
+        const clicked = await page.evaluate((title) => {
+            const searchText = title.substring(0, 20);
+
+            const links = Array.from(document.querySelectorAll("a"));
+            for (const link of links) {
+                const text = link.textContent?.trim() || "";
+                if (text.includes(searchText)) {
+                    link.click();
+                    return true;
+                }
+            }
+
+            const rows = document.querySelectorAll("tr");
+            for (const row of rows) {
+                if (row.textContent?.includes(searchText)) {
+                    const clickable = row.querySelector("a, button, [onclick]");
+                    if (clickable) {
+                        clickable.click();
+                        return true;
+                    }
+                    row.click();
+                    return true;
+                }
+            }
+
+            return false;
+        }, noticeTitle);
+
+        if (!clicked) {
+            console.log(`[Portal] クリック対象が見つかりません: ${noticeTitle.substring(0, 30)}...`);
+            return null;
+        }
+
+        // モーダルが表示されるのを待つ
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        // 本文を抽出
+        const content = await extractContentFromModal(page);
+
+        // モーダルを閉じる
+        await closeModal(page);
+
+        // 少し待機
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        return content;
+    } catch (error) {
+        console.error("[Portal] 詳細取得エラー:", error);
+        return null;
+    }
+}
+
+/**
  * お知らせを取得
  */
 async function fetchNoticesFromPage(page) {
@@ -123,6 +387,7 @@ async function fetchNoticesFromPage(page) {
                 title,
                 category,
                 date,
+                sender,
                 isRead: true,
                 isImportant,
             });
@@ -133,6 +398,21 @@ async function fetchNoticesFromPage(page) {
             (notice, index, self) =>
                 index === self.findIndex((n) => n.title === notice.title)
         );
+
+        // 各お知らせの詳細を取得
+        console.log(`[Portal] ${uniqueNotices.length}件のお知らせの詳細を取得中...`);
+        for (const notice of uniqueNotices) {
+            console.log(`[Portal] 詳細取得: ${notice.title.substring(0, 30)}...`);
+            const content = await fetchNoticeDetail(page, notice.title);
+            if (content) {
+                notice.content = content;
+                console.log(`[Portal] 本文取得成功 (${content.length}文字)`);
+            } else {
+                console.log(`[Portal] 本文取得失敗`);
+            }
+            // レート制限のため待機
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
 
         return uniqueNotices;
     } catch (error) {
@@ -202,7 +482,9 @@ async function main() {
         };
 
         fs.writeFileSync(CACHE_FILE, JSON.stringify(cacheData, null, 2));
-        console.log(`[Portal] ${notices.length}件のお知らせを保存しました`);
+
+        const noticesWithContent = notices.filter(n => n.content).length;
+        console.log(`[Portal] ${notices.length}件のお知らせを保存しました（詳細: ${noticesWithContent}件）`);
 
     } catch (error) {
         console.error("[Portal] エラー:", error);
