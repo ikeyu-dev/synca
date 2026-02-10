@@ -1,0 +1,13 @@
+services:
+    synca:
+        build: .
+        ports:
+            - "3000:3000"
+        env_file:
+            - .env.local
+        volumes:
+            - cache-data:/app/.cache
+        restart: unless-stopped
+
+volumes:
+    cache-data:
