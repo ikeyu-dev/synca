@@ -1,64 +1,31 @@
 /**
- * GitHub GistでFormsデータを管理
- * 読み書き両方に対応
+ * ローカルファイルでFormsデータを管理
  */
 
 import type { RegisteredForm } from "@/app/api/forms/route";
+import * as fs from "fs";
+import * as path from "path";
 
-const GIST_ID = process.env.FORMS_GIST_ID;
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const GIST_FILENAME = "forms.json";
+const FORMS_FILE = path.join(process.cwd(), ".cache", "forms.json");
 
 /**
- * GistからFormsデータを取得
+ * ローカルファイルからFormsデータを取得
  */
 export async function readFormsFromGist(): Promise<{
     success: boolean;
     data?: RegisteredForm[];
     error?: string;
 }> {
-    if (!GIST_ID) {
-        return {
-            success: false,
-            error: "FORMS_GIST_IDが設定されていません",
-        };
-    }
-
     try {
-        const response = await fetch(
-            `https://api.github.com/gists/${GIST_ID}`,
-            {
-                headers: {
-                    Accept: "application/vnd.github.v3+json",
-                    ...(GITHUB_TOKEN && {
-                        Authorization: `token ${GITHUB_TOKEN}`,
-                    }),
-                },
-                cache: "no-store",
-            }
-        );
-
-        if (!response.ok) {
-            throw new Error(`HTTP error: ${response.status}`);
+        if (!fs.existsSync(FORMS_FILE)) {
+            return { success: true, data: [] };
         }
 
-        const gist = await response.json();
-        const file = gist.files?.[GIST_FILENAME];
-
-        if (!file) {
-            return {
-                success: true,
-                data: [],
-            };
-        }
-
-        const forms: RegisteredForm[] = JSON.parse(file.content);
-        return {
-            success: true,
-            data: forms,
-        };
+        const content = fs.readFileSync(FORMS_FILE, "utf-8");
+        const forms: RegisteredForm[] = JSON.parse(content);
+        return { success: true, data: forms };
     } catch (error) {
-        console.error("[Forms Gist] 取得エラー:", error);
+        console.error("[Forms] 取得エラー:", error);
         return {
             success: false,
             error: "Formsの取得に失敗しました",
@@ -67,54 +34,21 @@ export async function readFormsFromGist(): Promise<{
 }
 
 /**
- * GistにFormsデータを書き込み
+ * ローカルファイルにFormsデータを書き込み
  */
 export async function writeFormsToGist(
     forms: RegisteredForm[]
 ): Promise<{ success: boolean; error?: string }> {
-    if (!GIST_ID) {
-        return {
-            success: false,
-            error: "FORMS_GIST_IDが設定されていません",
-        };
-    }
-
-    if (!GITHUB_TOKEN) {
-        return {
-            success: false,
-            error: "GITHUB_TOKENが設定されていません",
-        };
-    }
-
     try {
-        const response = await fetch(
-            `https://api.github.com/gists/${GIST_ID}`,
-            {
-                method: "PATCH",
-                headers: {
-                    Accept: "application/vnd.github.v3+json",
-                    Authorization: `token ${GITHUB_TOKEN}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    files: {
-                        [GIST_FILENAME]: {
-                            content: JSON.stringify(forms, null, 2),
-                        },
-                    },
-                }),
-            }
-        );
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("[Forms Gist] 書き込みエラー:", errorText);
-            throw new Error(`HTTP error: ${response.status}`);
+        const dir = path.dirname(FORMS_FILE);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
         }
 
+        fs.writeFileSync(FORMS_FILE, JSON.stringify(forms, null, 2));
         return { success: true };
     } catch (error) {
-        console.error("[Forms Gist] 書き込みエラー:", error);
+        console.error("[Forms] 書き込みエラー:", error);
         return {
             success: false,
             error: "Formsの保存に失敗しました",

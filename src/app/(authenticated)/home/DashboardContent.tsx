@@ -19,8 +19,6 @@ import { convertTodoistTask } from "@/entities/task";
 import type { TrainOperation, TransitRoute } from "@/entities/transit";
 import type { FavoriteRoute } from "@/entities/station";
 import { fetchPortalNotices, type PortalNotice } from "@/features/portal";
-import { NotificationPermissionBanner, NotificationTestButton } from "@/features/notifications";
-import { checkAndNotifyNewNotices } from "@/shared/lib/notifications";
 
 interface DashboardContentProps {
     accessToken?: string;
@@ -833,9 +831,6 @@ function DateHeader() {
                 {today.getFullYear()}年{month}月{date}日（{weekday}）
             </p>
             <h1 className="text-2xl font-bold text-primary mt-1">Dashboard</h1>
-            <div className="mt-2">
-                <NotificationTestButton />
-            </div>
         </div>
     );
 }
@@ -940,8 +935,6 @@ export function DashboardContent({ accessToken }: DashboardContentProps) {
                 const result = await fetchPortalNotices();
                 if (result.success && result.data) {
                     setNotices(result.data);
-                    // 新しいお知らせがあれば通知
-                    checkAndNotifyNewNotices(result.data);
                 } else {
                     setNoticesError(result.error || "お知らせの取得に失敗しました");
                 }
@@ -967,7 +960,6 @@ export function DashboardContent({ accessToken }: DashboardContentProps) {
 
     return (
         <div className="space-y-4 pb-4">
-            <NotificationPermissionBanner />
             <DateHeader />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

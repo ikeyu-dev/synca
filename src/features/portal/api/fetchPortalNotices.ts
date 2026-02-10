@@ -2,14 +2,12 @@
 
 import {
     fetchPortalNotices as fetchFromPortal,
-    fetchPortalNoticesFromGist,
     type PortalNotice,
 } from "@/shared/lib/nit-portal";
 
 /**
  * ポータルサイトのお知らせを取得
- * Vercel環境ではGistから、ローカル環境では直接スクレイピング
- * @param forceRefresh - trueの場合、キャッシュを無視して再取得（ローカルのみ有効）
+ * @param forceRefresh - trueの場合、キャッシュを無視して再取得
  */
 export async function fetchPortalNotices(forceRefresh = false): Promise<{
     success: boolean;
@@ -17,14 +15,7 @@ export async function fetchPortalNotices(forceRefresh = false): Promise<{
     error?: string;
 }> {
     try {
-        // Vercel環境ではGistから取得
-        if (process.env.VERCEL) {
-            return await fetchPortalNoticesFromGist();
-        }
-
-        // ローカル環境では直接スクレイピング
-        const result = await fetchFromPortal(forceRefresh);
-        return result;
+        return await fetchFromPortal(forceRefresh);
     } catch (error) {
         console.error("[Portal] Fetch error:", error);
         return {
