@@ -3,7 +3,8 @@
  * Discord チャンネルに通知を送信する
  */
 
-const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+const WEBHOOK_URL_PORTAL = process.env.DISCORD_WEBHOOK_URL_PORTAL;
+const WEBHOOK_URL_TODOIST = process.env.DISCORD_WEBHOOK_URL_TODOIST;
 
 interface DiscordEmbed {
     title?: string;
@@ -21,18 +22,14 @@ interface DiscordWebhookPayload {
 }
 
 /**
- * Discord Webhookにメッセージを送信する
+ * 指定したWebhook URLにメッセージを送信する
  */
-export async function sendDiscordMessage(
+async function sendToWebhook(
+    webhookUrl: string,
     payload: DiscordWebhookPayload
 ): Promise<boolean> {
-    if (!WEBHOOK_URL) {
-        console.error("[Discord] DISCORD_WEBHOOK_URL が設定されていません");
-        return false;
-    }
-
     try {
-        const response = await fetch(WEBHOOK_URL, {
+        const response = await fetch(webhookUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -79,7 +76,12 @@ export async function notifyPortalNotices(
         footer: { text: notice.date },
     }));
 
-    return sendDiscordMessage({
+    if (!WEBHOOK_URL_PORTAL) {
+        console.error("[Discord] DISCORD_WEBHOOK_URL_PORTAL が設定されていません");
+        return false;
+    }
+
+    return sendToWebhook(WEBHOOK_URL_PORTAL, {
         content: `**ポータル: ${notices.length}件の新しいお知らせ**`,
         embeds,
     });
@@ -102,7 +104,12 @@ export async function notifyTodoistEvent(
 
     const label = eventLabels[eventName] || eventName;
 
-    return sendDiscordMessage({
+    if (!WEBHOOK_URL_TODOIST) {
+        console.error("[Discord] DISCORD_WEBHOOK_URL_TODOIST が設定されていません");
+        return false;
+    }
+
+    return sendToWebhook(WEBHOOK_URL_TODOIST, {
         embeds: [
             {
                 title: `Todoist: ${label}`,
